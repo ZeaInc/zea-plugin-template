@@ -1,3 +1,7 @@
-# Zea Kinematics
 
-Kinematic Operators for the Zea Engine.
+# About the MyPlugin
+
+MyPlugin is so awesome, you gotta try it...
+
+## Getting Started
+
