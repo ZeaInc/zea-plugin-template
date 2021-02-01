@@ -1,9 +1,7 @@
 import { MyCustomTreeItem } from './MyCustomTreeItem'
 import { MyCustomRenderShader } from './MyCustomRenderShader'
 
-import { Color, NumberParameter, TreeItem, GLPass, GLMesh, Cuboid, PassType } from '@zeainc/zea-engine'
-
-const pixelsPerItem = 6 // The number of pixels per draw item.
+import { TreeItem, GLPass, GLMesh, Cuboid, PassType } from '@zeainc/zea-engine'
 
 /** Class representing a GL treeItems pass.
  * @extends GLPass
