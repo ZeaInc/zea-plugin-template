@@ -40,6 +40,8 @@ npm run dev
 
 ![MyCustomGeom](images/MyCustomGeom.png)
 
+![MyCustomOperator](images/MyCustomOperator.png)
+
 
 ## Changing the Name of the Plugin
 
