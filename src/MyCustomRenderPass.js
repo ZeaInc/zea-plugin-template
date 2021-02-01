@@ -1,16 +1,17 @@
 import { MyCustomTreeItem } from './MyCustomTreeItem'
+import { MyCustomRenderShader } from './MyCustomRenderShader'
 
-import { Color, NumberParameter, TreeItem, GLPass } from '@zeainc/zea-engine'
+import { Color, NumberParameter, TreeItem, GLPass, GLMesh, Cuboid, PassType } from '@zeainc/zea-engine'
 
 const pixelsPerItem = 6 // The number of pixels per draw item.
 
-/** Class representing a GL treeitems pass.
+/** Class representing a GL treeItems pass.
  * @extends GLPass
  * @private
  */
 class MyCustomRenderPass extends GLPass {
   /**
-   * Create a GL treeitems pass.
+   * Create a GL treeItems pass.
    */
   constructor() {
     super()
@@ -18,7 +19,7 @@ class MyCustomRenderPass extends GLPass {
   }
 
   /**
-   * The getPassType method.
+   * Returns the pass type. OPAQUE passes are always rendered first, followed by TRANSPARENT passes, and finally OVERLAY.
    * @return {number} - The pass type value.
    */
   getPassType() {
@@ -34,8 +35,9 @@ class MyCustomRenderPass extends GLPass {
     super.init(renderer, passIndex)
 
     const gl = this.__renderer.gl
-    this.glgeom = new GLLines(gl, new LinesCuboid(1, 1, 1))
-    this.glshader = new BoundingBoxShader(gl)
+    this.glgeom = new GLMesh(gl, new Cuboid(1, 1, 1))
+
+    this.glshader = new MyCustomRenderShader(gl)
   }
 
   /**
@@ -76,17 +78,45 @@ class MyCustomRenderPass extends GLPass {
 
   /**
    * The bindTreeItem method.
-   * @param {any} treeitem - The treeitem value.
+   * @param {any} customItem - The customItem value.
    */
-  bindTreeItem(treeitem) {
+  bindTreeItem(customItem) {
+    const binding = {
+      customItem: customItem,
+      modelMatrixChangeHandler: () => {
+        binding.modelMatrix = customItem.getParameter('GlobalXfo').getValue().toMat4().asArray()
+      },
+      sizeChangeHandler: () => {
+        binding.size = customItem.getParameter('Size').getValue().asArray()
+      },
+      colorChangeHandler: () => {
+        binding.color = customItem.getParameter('Color').getValue().asArray()
+      },
+    }
+
+    // If the GlobalXfo changes, we need to update the renderer cache.
+    binding.modelMatrixChangeHandler()
+    binding.sizeChangeHandler()
+    binding.colorChangeHandler()
+    customItem.getParameter('GlobalXfo').on('valueChanged', binding.modelMatrixChangeHandler)
+    customItem.getParameter('Size').on('valueChanged', binding.sizeChangeHandler)
+    customItem.getParameter('Color').on('valueChanged', binding.colorChangeHandler)
+
+    this.customItems.push(binding)
     this.emit('updated')
   }
 
   /**
    * The unbindTreeItem method.
-   * @param {any} treeitem - The treeitem value.
+   * @param {any} customItem - The customItem value.
    */
-  unbindTreeItem(treeitem) {
+  unbindTreeItem(customItem) {
+    const index = this.customItems.find((binding) => binding.customItem == customItem)
+    const binding = this.customItems[index]
+    customItem.getParameter('GlobalXfo').off('valueChanged', binding.modelMatrixChangeHandler)
+    customItem.getParameter('Size').off('valueChanged', binding.sizeChangeHandler)
+    customItem.getParameter('Color').off('valueChanged', binding.colorChangeHandler)
+    this.customItems.splice(index, 1)
     this.emit('updated')
   }
 
@@ -94,7 +124,23 @@ class MyCustomRenderPass extends GLPass {
    * The sort method.
    * @param {any} renderstate - The renderstate value.
    */
-  draw(renderstate) {}
+  draw(renderstate) {
+    const gl = this.__gl
+    this.glshader.bind(renderstate)
+    this.glgeom.bind(renderstate)
+
+    const unifs = renderstate.unifs
+
+    this.customItems.forEach((binding) => {
+      gl.uniformMatrix4fv(unifs.modelMatrix.location, false, binding.modelMatrix)
+      gl.uniform3fv(unifs.boxSize.location, binding.size)
+      gl.uniform4fv(unifs.color.location, binding.color)
+
+      renderstate.bindViewports(unifs, () => {
+        this.glgeom.draw(renderstate)
+      })
+    })
+  }
 
   /**
    * The drawHighlightedGeoms method.

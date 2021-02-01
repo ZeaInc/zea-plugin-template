@@ -2,7 +2,7 @@ import { terser } from 'rollup-plugin-terser'
 
 import pkg from './package.json'
 
-const external = ['@zeainc/zea-engine', '@zeainc/zea-ux']
+const external = ['@zeainc/zea-engine']
 
 const plugins = []
 
@@ -20,13 +20,12 @@ export default [
     input: 'src/index.js',
     external,
     output: {
-      name: 'zeaKinematics',
+      name: 'myPlugin',
       file: pkg.browser,
       format: 'umd',
       sourcemap,
       globals: {
         '@zeainc/zea-engine': 'zeaEngine',
-        '@zeainc/zea-ux': 'zeaUx',
       },
     },
     plugins,

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>MyCustomTreeItem</title>
+    <link rel="stylesheet" href="styles/tachyons.min.css" />
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <canvas class="full-size" id="app"></canvas>
+
+    <script src="../node_modules/@zeainc/zea-engine/dist/index.umd.js"></script>
+    <script src="../dist/index.umd.js"></script>
+
+    <script type="module">
+      const { GLRenderer, Scene, Vec3, Xfo, Color, Disc, Material, GeomItem, GLBoundingBoxPass } = zeaEngine
+
+      const scene = new Scene()
+      const renderer = new GLRenderer(document.getElementById('app'), { hideSplash: true, xrCompatible: false })
+      renderer.setScene(scene)
+      scene.setupGrid(10, 10)
+
+      // /////////////////////////////////////
+      // Setup a Bounding Box pass to display all
+      // the bounding boxes of the items in the scene.
+
+      const boundingBoxPass = new GLBoundingBoxPass()
+      renderer.addPass(boundingBoxPass)
+      boundingBoxPass.addTreeItem(scene.getRoot(), true)
+
+      // /////////////////////////////////////
+      // Setup the custom classes
+      // The custom pass to handle rendering, and add a custom
+      // TreeItem to the scene tree
+      const { MyCustomRenderPass, MyCustomTreeItem } = window.myPlugin
+
+      const myCustomRenderPass = new MyCustomRenderPass()
+      renderer.addPass(myCustomRenderPass)
+
+      const myCustomTreeItem = new MyCustomTreeItem('Foo')
+
+      myCustomTreeItem.getParameter('GlobalXfo').setValue(new Xfo(new Vec3(0, 0, 1)))
+      scene.getRoot().addChild(myCustomTreeItem)
+
+      // /////////////////////////////////////
+      // Prepare to capture images.
+      renderer.getViewport().getCamera().setPositionAndTarget(new Vec3(2, 2, 2), new Vec3(0, 0, 0.4))
+      renderer.frameAll()
+      window.postMessage('done-loading')
+
+      // {{{ Messages handler.
+      const handleMessage = (event) => {
+        const { data } = event
+
+        if (data === 'variant-01') {
+          renderer.once('redrawOccurred', () => {
+            window.postMessage(`done-${data}`)
+          })
+        } else if (data === 'variant-02') {
+          renderer.once('redrawOccurred', () => {
+            window.postMessage(`done-${data}`)
+          })
+        }
+      }
+
+      window.addEventListener('message', handleMessage, false)
+      // }}}
+    </script>
+  </body>
+</html>
