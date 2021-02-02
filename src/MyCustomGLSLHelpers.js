@@ -177,55 +177,6 @@ shaderLibrary.setShaderModule(
   }
   
   
-  vec4 render(vec3 ro, vec3 rd) {
-    vec2 res = castRay(ro, rd);
-    float t = res.x;
-    float m = res.y;
-  
-    if (m > -0.5) {
-      vec3 pos = ro + t * rd;
-      vec3 nor = calcNormal(pos);
-  
-      // material
-      vec3 col = color.rgb;
-  
-      // lighitng
-      float occ = 1.0;// calcAO(pos, nor);
-      vec3 lig = -rd;
-      float amb = clamp(0.5 + 0.5 * nor.y, 0.0, 1.0);
-      float dif = clamp(dot(nor, lig), 0.0, 1.0);
-  
-      float fre = pow(clamp(1.0 + dot(nor, rd), 0.0, 1.0), 2.0);
-  
-      vec3 ref = reflect(rd, nor);
-      float spe = pow(clamp(dot(ref, lig), 0.0, 1.0), 100.0);
-  
-      // dif *= softshadow(pos, lig, 0.02, 2.5);
-  
-      vec3 brdf = vec3(0.0);
-      brdf += 1.20 * dif * vec3(1.00, 0.90, 0.60);
-      brdf += 1.20 * spe * vec3(1.00, 0.90, 0.60) * dif;
-  
-      // Additional specular lighting trick,
-      // taken from "Wet stone" by TDM
-      // https://www.shadertoy.com/view/ldSSzV
-      nor = normalize(nor - normalize(pos) * 0.2);
-      ref = reflect(rd, nor);
-      spe = pow(clamp(dot(ref, lig), 0.0, 1.0), 100.0);
-      brdf += 2.20 * spe * vec3(1.00, 0.90, 0.60) * dif;
-  
-      brdf += 0.40 * amb * vec3(0.50, 0.70, 1.00) * occ;
-      brdf += 0.40 * fre * vec3(1.00, 1.00, 1.00) * occ;
-  
-      col = col * brdf;
-  
-      // col = mix(col, vec3(0.0), 1.0 - exp(-0.005 * t * t));
-      return vec4(vec3(clamp(col, 0.0, 1.0)), t);
-    }
-    
-    return vec4(-1.0);
-  }
-  
   
 `
 )

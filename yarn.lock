@@ -1472,10 +1472,10 @@
   resolved "https://registry.yarnpkg.com/@webcomponents/webcomponentsjs/-/webcomponentsjs-2.5.0.tgz#61b27785a6ad5bfd68fa018201fe418b118cb38d"
   integrity sha512-C0l51MWQZ9kLzcxOZtniOMohpIFdCLZum7/TEHv3XWFc1Fvt5HCpbSX84x8ltka/JuNKcuiDnxXFkiB2gaePcg==
 
-"@zeainc/zea-engine@^3.1.1-rc.8":
-  version "3.1.1-rc.8"
-  resolved "https://registry.yarnpkg.com/@zeainc/zea-engine/-/zea-engine-3.1.1-rc.8.tgz#bec5a5d82b9aa8a3e98256e8e1460cb2ead187ff"
-  integrity sha512-9MLwZWZ6Fu+e4AjJdJTd66eVAQFp58yjV63qpxvjK5QWt2MA7o4LupAATE/VlkV5rOSKmAqJowbMYK4J4NFm3g==
+"@zeainc/zea-engine@^3.1.1-rc.10":
+  version "3.1.1-rc.11"
+  resolved "https://registry.yarnpkg.com/@zeainc/zea-engine/-/zea-engine-3.1.1-rc.11.tgz#5d66a18166965020285720c9f5691c1215db9bdb"
+  integrity sha512-bzL2cmkEO1YhQKbXqi3gDTAhbsd9mjjzc+vKiYGtM9ptiWhownMCseTt5YTrjjeEMaPCFMSMr9gc7iLc/1HILQ==
   dependencies:
     debug "^4.1.1"
     semver "^7.3.2"

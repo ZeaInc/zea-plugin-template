@@ -13,7 +13,8 @@ class MyCustomRenderPass extends GLPass {
    */
   constructor() {
     super()
-    this.customItems = []
+    this.customItemBindings = []
+    this.highlightedItems = new Set()
   }
 
   /**
@@ -83,12 +84,25 @@ class MyCustomRenderPass extends GLPass {
       customItem: customItem,
       modelMatrixChangeHandler: () => {
         binding.modelMatrix = customItem.getParameter('GlobalXfo').getValue().toMat4().asArray()
+        this.emit('updated') // tell the renderer we need to redraw
       },
       sizeChangeHandler: () => {
         binding.size = customItem.getParameter('Size').getValue().asArray()
+        this.emit('updated') // tell the renderer we need to redraw
       },
       colorChangeHandler: () => {
         binding.color = customItem.getParameter('Color').getValue().asArray()
+        this.emit('updated') // tell the renderer we need to redraw
+      },
+      highlightChangeHandler: () => {
+        const color = customItem.getHighlight()
+        if (color) {
+          binding.highlightColor = color.asArray()
+          this.highlightedItems.add(binding)
+        } else {
+          this.highlightedItems.delete(binding)
+        }
+        this.emit('updated') // tell the renderer we need to redraw
       },
     }
 
@@ -96,11 +110,13 @@ class MyCustomRenderPass extends GLPass {
     binding.modelMatrixChangeHandler()
     binding.sizeChangeHandler()
     binding.colorChangeHandler()
+    binding.highlightChangeHandler()
     customItem.getParameter('GlobalXfo').on('valueChanged', binding.modelMatrixChangeHandler)
     customItem.getParameter('Size').on('valueChanged', binding.sizeChangeHandler)
     customItem.getParameter('Color').on('valueChanged', binding.colorChangeHandler)
+    customItem.on('highlightChanged', binding.highlightChangeHandler)
 
-    this.customItems.push(binding)
+    this.customItemBindings.push(binding)
     this.emit('updated')
   }
 
@@ -109,12 +125,14 @@ class MyCustomRenderPass extends GLPass {
    * @param {any} customItem - The customItem value.
    */
   unbindTreeItem(customItem) {
-    const index = this.customItems.find((binding) => binding.customItem == customItem)
-    const binding = this.customItems[index]
+    const index = this.customItemBindings.find((binding) => binding.customItem == customItem)
+    const binding = this.customItemBindings[index]
     customItem.getParameter('GlobalXfo').off('valueChanged', binding.modelMatrixChangeHandler)
     customItem.getParameter('Size').off('valueChanged', binding.sizeChangeHandler)
     customItem.getParameter('Color').off('valueChanged', binding.colorChangeHandler)
-    this.customItems.splice(index, 1)
+    customItem.off('highlightChanged', binding.highlightChangeHandler)
+    this.customItemBindings.splice(index, 1)
+    if (this.highlightedItems.has()) this.highlightedItems.remove(binding)
     this.emit('updated')
   }
 
@@ -124,12 +142,12 @@ class MyCustomRenderPass extends GLPass {
    */
   draw(renderstate) {
     const gl = this.__gl
-    this.glshader.bind(renderstate)
+    this.glshader.bind(renderstate, 'DRAW_COLOR')
     this.glgeom.bind(renderstate)
 
     const unifs = renderstate.unifs
 
-    this.customItems.forEach((binding) => {
+    this.customItemBindings.forEach((binding) => {
       gl.uniformMatrix4fv(unifs.modelMatrix.location, false, binding.modelMatrix)
       gl.uniform3fv(unifs.boxSize.location, binding.size)
       gl.uniform4fv(unifs.color.location, binding.color)
@@ -144,13 +162,46 @@ class MyCustomRenderPass extends GLPass {
    * The drawHighlightedGeoms method.
    * @param {any} renderstate - The renderstate value.
    */
-  drawHighlightedGeoms(renderstate) {}
+  drawHighlightedGeoms(renderstate) {
+    const gl = this.__gl
+    this.glshader.bind(renderstate, 'DRAW_HIGHLIGHT')
+    this.glgeom.bind(renderstate)
+
+    const unifs = renderstate.unifs
+
+    this.highlightedItems.forEach((binding) => {
+      gl.uniformMatrix4fv(unifs.modelMatrix.location, false, binding.modelMatrix)
+      gl.uniform3fv(unifs.boxSize.location, binding.size)
+      gl.uniform4fv(unifs.highlightColor.location, binding.highlightColor)
+
+      renderstate.bindViewports(unifs, () => {
+        this.glgeom.draw(renderstate)
+      })
+    })
+  }
 
   /**
    * The drawGeomData method.
    * @param {any} renderstate - The renderstate value.
    */
-  drawGeomData(renderstate) {}
+  drawGeomData(renderstate) {
+    const gl = this.__gl
+    this.glshader.bind(renderstate, 'DRAW_GEOMDATA')
+    this.glgeom.bind(renderstate)
+
+    const unifs = renderstate.unifs
+
+    this.customItemBindings.forEach((binding, index) => {
+      gl.uniformMatrix4fv(unifs.modelMatrix.location, false, binding.modelMatrix)
+      gl.uniform3fv(unifs.boxSize.location, binding.size)
+      gl.uniform1i(unifs.passId.location, this.__passIndex)
+      gl.uniform1i(unifs.itemId.location, index)
+
+      renderstate.bindViewports(unifs, () => {
+        this.glgeom.draw(renderstate)
+      })
+    })
+  }
 
   /**
    * The getGeomItemAndDist method.
@@ -161,10 +212,10 @@ class MyCustomRenderPass extends GLPass {
     const itemId = Math.round(geomData[1])
     const dist = geomData[3]
 
-    const glGeomItem = this.__drawItems[itemId]
-    if (glGeomItem) {
+    const binding = this.customItemBindings[itemId]
+    if (binding) {
       return {
-        geomItem: glGeomItem.getGeomItem(),
+        geomItem: binding.customItem,
         dist,
       }
     }
