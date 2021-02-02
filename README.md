@@ -19,7 +19,7 @@ Our recommended way to clone this template is by using [degit](https://github.co
   - User [degit](https://github.com/Rich-Harris/degit) to create a project on your system.
 
 ```bash
-npx degit zeainc/zea-svelte-template#main my-awesome-app
+npx degit zeainc/zea-plugin-template#main my-awesome-app
 ```
 
 2. Open a shell In the folder of your new repository and install the project's dependencies by running:
