@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="styles/tachyons.min.css" />
     <link rel="stylesheet" href="styles/main.css" />
     <script src="../node_modules/@zeainc/zea-engine/dist/index.umd.js"></script>
+    <script src="../node_modules/@zeainc/zea-engine/dist/plugins.umd.js"></script>
     <script src="../dist/index.umd.js"></script>
   </head>
   <body>
@@ -38,6 +39,10 @@
       renderer.addPass(myCustomRenderPass)
 
       const myCustomTreeItem = new MyCustomTreeItem('Foo')
+
+      myCustomTreeItem.loadDataFile('./data/test-data.txt').then(() => {
+        console.log('Loading done')
+      })
 
       myCustomTreeItem.getParameter('GlobalXfo').setValue(new Xfo(new Vec3(0, 0, 0.5)))
       scene.getRoot().addChild(myCustomTreeItem)

@@ -44,7 +44,7 @@ class MyCustomTreeItem extends TreeItem {
       resourceLoader.incrementWorkload(1)
       resourceLoader.loadFile('text', url).then(
         (txt) => {
-          parseMtlData(fileData)
+          this.parseData(txt)
           resourceLoader.incrementWorkDone(1)
           resolve()
         },
@@ -74,6 +74,12 @@ class MyCustomTreeItem extends TreeItem {
       const key = elements.shift()
       const value = elements.join(' ')
       switch (key) {
+        case 'Foo':
+          console.log(line)
+          break
+        case 'Bar':
+          console.log(line)
+          break
         default:
           console.log('Unhandled line', line)
         // console.warn("Unhandled material parameter: '" + key +"' in:" + filePath);
