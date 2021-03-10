@@ -82,6 +82,9 @@ class MyCustomRenderPass extends GLPass {
   bindTreeItem(customItem) {
     const binding = {
       customItem: customItem,
+      metallic: 0.98,
+      reflectance: 0.75,
+      roughness: 0.5,
       modelMatrixChangeHandler: () => {
         binding.modelMatrix = customItem.getParameter('GlobalXfo').getValue().toMat4().asArray()
         this.emit('updated') // tell the renderer we need to redraw
@@ -151,6 +154,9 @@ class MyCustomRenderPass extends GLPass {
       gl.uniformMatrix4fv(unifs.modelMatrix.location, false, binding.modelMatrix)
       gl.uniform3fv(unifs.boxSize.location, binding.size)
       gl.uniform4fv(unifs.color.location, binding.color)
+      gl.uniform1f(unifs.metallic.location, binding.metallic)
+      gl.uniform1f(unifs.roughness.location, binding.roughness)
+      gl.uniform1f(unifs.reflectance.location, binding.reflectance)
 
       renderstate.bindViewports(unifs, () => {
         this.glgeom.draw(renderstate)

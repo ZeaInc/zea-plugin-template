@@ -12,7 +12,7 @@
     <canvas class="full-size" id="app"></canvas>
 
     <script type="module">
-      const { GLRenderer, Scene, Vec3, Xfo, Color, Sphere, Material, GeomItem, GLBoundingBoxPass } = zeaEngine
+      const { GLRenderer, Scene, Vec3, Xfo, Color, Sphere, Material, GeomItem, GLBoundingBoxPass, EnvMap } = zeaEngine
 
       const scene = new Scene()
       const renderer = new GLRenderer(document.getElementById('app'), { hideSplash: true, xrCompatible: false })
@@ -21,13 +21,19 @@
 
       // renderer.getViewport().debugGeomShader = true
 
+      const envMap = new EnvMap()
+      envMap.getParameter('FilePath').setValue('data/pisa.zenv')
+      scene.setEnvMap(envMap)
+      scene.getSettings().getParameter('Display EnvMap').setValue(false)
+      renderer.exposure = 1.5
+
       // /////////////////////////////////////
       // Setup a Bounding Box pass to display all
       // the bounding boxes of the items in the scene.
 
-      // const boundingBoxPass = new GLBoundingBoxPass()
-      // renderer.addPass(boundingBoxPass)
-      // boundingBoxPass.addTreeItem(scene.getRoot(), true)
+      const boundingBoxPass = new GLBoundingBoxPass()
+      renderer.addPass(boundingBoxPass)
+      boundingBoxPass.addTreeItem(scene.getRoot(), true)
 
       // /////////////////////////////////////
       // Setup the custom classes

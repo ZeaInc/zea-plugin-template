@@ -16,7 +16,7 @@ class MyCustomTreeItem extends TreeItem {
     super(name)
 
     this.addParameter(new Vec3Parameter('Size', new Vec3(2, 2, 2)))
-    this.addParameter(new ColorParameter('Color', new Color(1, 0, 0)))
+    this.addParameter(new ColorParameter('Color', new Color('#cec8c2')))
   }
 
   /**

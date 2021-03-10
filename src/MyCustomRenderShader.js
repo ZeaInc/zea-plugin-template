@@ -28,12 +28,14 @@ uniform mat4 projectionMatrix;
 /* VS Outputs */
 varying vec3 v_worldPos;
 varying vec3 v_bboxPos;
+varying vec3 v_viewPos;
 
 void main(void) {
   mat4 modelViewMatrix = viewMatrix * modelMatrix;
   vec4 pos = positions * vec4(boxSize, 1.0);
 
   vec4 viewPos    = modelViewMatrix * pos;
+  v_viewPos       = -viewPos.xyz;
   
   v_worldPos = (modelMatrix * pos).xyz;
   v_bboxPos = (modelMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
@@ -47,15 +49,16 @@ void main(void) {
       `
 precision highp float;
 
-
-uniform mat4 cameraMatrix;
-
 uniform vec3 boxSize;
 uniform mat4 viewMatrix;
+uniform mat4 cameraMatrix;
 uniform mat4 projectionMatrix;
 
 #if defined(DRAW_COLOR)
 uniform vec4 color;
+uniform float metallic;
+uniform float roughness;
+uniform float reflectance;
 #elif defined(DRAW_GEOMDATA)
 uniform int passId;
 uniform int itemId;
@@ -66,10 +69,13 @@ uniform vec4 highlightColor;
 /* VS Outputs */
 varying vec3 v_worldPos;
 varying vec3 v_bboxPos;
+varying vec3 v_viewPos;
 
 
 <%include file="GLSLUtils.glsl"/>
 <%include file="MyCustomGLSLHelpers.glsl"/>
+<%include file="stack-gl/gamma.glsl"/>
+<%include file="PBRSurfaceRadiance.glsl"/>
 
 vec4 render(vec3 ro, vec3 rd) {
   vec2 res = castRay(ro, rd);
@@ -81,43 +87,20 @@ vec4 render(vec3 ro, vec3 rd) {
 #if defined(DRAW_COLOR)
 
     vec3 nor = calcNormal(pos);
+    
+    vec3 viewVector = normalize(mat3(cameraMatrix) * normalize(v_viewPos));
+    
+    MaterialParams material;
+    material.baseColor     = toLinear(color.rgb);
+    material.metallic      = metallic;
+    material.roughness     = roughness;
+    material.reflectance   = reflectance;
 
-    // material
-    vec3 col = color.rgb;
-
-    // lighitng
-    float occ = 1.0;// calcAO(pos, nor);
-    vec3 lig = -rd;
-    float amb = clamp(0.5 + 0.5 * nor.y, 0.0, 1.0);
-    float dif = clamp(dot(nor, lig), 0.0, 1.0);
-
-    float fre = pow(clamp(1.0 + dot(nor, rd), 0.0, 1.0), 2.0);
-
-    vec3 ref = reflect(rd, nor);
-    float spe = pow(clamp(dot(ref, lig), 0.0, 1.0), 100.0);
-
-    // dif *= softshadow(pos, lig, 0.02, 2.5);
-
-    vec3 brdf = vec3(0.0);
-    brdf += 1.20 * dif * vec3(1.00, 0.90, 0.60);
-    brdf += 1.20 * spe * vec3(1.00, 0.90, 0.60) * dif;
-
-    // Additional specular lighting trick,
-    // taken from "Wet stone" by TDM
-    // https://www.shadertoy.com/view/ldSSzV
-    nor = normalize(nor - normalize(pos) * 0.2);
-    ref = reflect(rd, nor);
-    spe = pow(clamp(dot(ref, lig), 0.0, 1.0), 100.0);
-    brdf += 2.20 * spe * vec3(1.00, 0.90, 0.60) * dif;
-
-    brdf += 0.40 * amb * vec3(0.50, 0.70, 1.00) * occ;
-    brdf += 0.40 * fre * vec3(1.00, 1.00, 1.00) * occ;
-
-    col = col * brdf;
-
-    // col = mix(col, vec3(0.0), 1.0 - exp(-0.005 * t * t));
-    return vec4(vec3(clamp(col, 0.0, 1.0)), t);
-
+    material.emission         = 0.0;
+    material.opacity          = 1.0;
+    vec4 radiance = pbrSurfaceRadiance(material, nor, viewVector);
+    
+    return vec4(vec3(clamp(radiance.rgb, 0.0, 1.0)), t);
 #else
     return vec4(vec3(0.0), t);
 #endif
@@ -156,9 +139,11 @@ void main(void) {
   // the shader can be compiled in 3 different modes. 
   // In 'DRAW_COLOR' mode the final pixel color is output to the fragment.
 #if defined(DRAW_COLOR)
+
   // gamma
   vec3 col = pow( res.rgb, vec3(0.4545) );
   fragColor = vec4( col, 1.0 );
+  
 #elif defined(DRAW_GEOMDATA)
   // The Geom Data buffer is an offscreen buffer that stores identifying 
   // information in each pixel for the geometry rasterized to that pixel.
@@ -179,6 +164,27 @@ void main(void) {
 }
 `
     )
+  }
+
+  /**
+   * The bind method.
+   * @param {object} renderstate - The object tracking the current state of the renderer
+   * @param {string} key - The key value.
+   * @return {any} - The return value.
+   */
+  bind(renderstate, key) {
+    super.bind(renderstate, key)
+
+    const gl = this.__gl
+    if (renderstate.envMap) {
+      renderstate.envMap.bind(renderstate)
+    }
+
+    const { exposure } = renderstate.unifs
+    if (exposure) {
+      gl.uniform1f(exposure.location, renderstate.exposure)
+    }
+    return true
   }
 
   static getParamDeclarations() {
