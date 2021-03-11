@@ -93,8 +93,11 @@ class MyCustomRenderPass extends GLPass {
         binding.size = customItem.getParameter('Size').getValue().asArray()
         this.emit('updated') // tell the renderer we need to redraw
       },
-      colorChangeHandler: () => {
+      materialChangeHandler: () => {
         binding.color = customItem.getParameter('Color').getValue().asArray()
+        binding.metallic = customItem.getParameter('Metallic').getValue()
+        binding.reflectance = customItem.getParameter('Reflectance').getValue()
+        binding.roughness = customItem.getParameter('Roughness').getValue()
         this.emit('updated') // tell the renderer we need to redraw
       },
       highlightChangeHandler: () => {
@@ -112,11 +115,14 @@ class MyCustomRenderPass extends GLPass {
     // If the GlobalXfo changes, we need to update the renderer cache.
     binding.modelMatrixChangeHandler()
     binding.sizeChangeHandler()
-    binding.colorChangeHandler()
+    binding.materialChangeHandler()
     binding.highlightChangeHandler()
     customItem.getParameter('GlobalXfo').on('valueChanged', binding.modelMatrixChangeHandler)
     customItem.getParameter('Size').on('valueChanged', binding.sizeChangeHandler)
-    customItem.getParameter('Color').on('valueChanged', binding.colorChangeHandler)
+    customItem.getParameter('Color').on('valueChanged', binding.materialChangeHandler)
+    customItem.getParameter('Reflectance').on('valueChanged', binding.materialChangeHandler)
+    customItem.getParameter('Metallic').on('valueChanged', binding.materialChangeHandler)
+    customItem.getParameter('Roughness').on('valueChanged', binding.materialChangeHandler)
     customItem.on('highlightChanged', binding.highlightChangeHandler)
 
     this.customItemBindings.push(binding)
@@ -132,7 +138,10 @@ class MyCustomRenderPass extends GLPass {
     const binding = this.customItemBindings[index]
     customItem.getParameter('GlobalXfo').off('valueChanged', binding.modelMatrixChangeHandler)
     customItem.getParameter('Size').off('valueChanged', binding.sizeChangeHandler)
-    customItem.getParameter('Color').off('valueChanged', binding.colorChangeHandler)
+    customItem.getParameter('Color').off('valueChanged', binding.materialChangeHandler)
+    customItem.getParameter('Reflectance').off('valueChanged', binding.materialChangeHandler)
+    customItem.getParameter('Metallic').off('valueChanged', binding.materialChangeHandler)
+    customItem.getParameter('Roughness').off('valueChanged', binding.materialChangeHandler)
     customItem.off('highlightChanged', binding.highlightChangeHandler)
     this.customItemBindings.splice(index, 1)
     if (this.highlightedItems.has()) this.highlightedItems.remove(binding)
@@ -145,6 +154,13 @@ class MyCustomRenderPass extends GLPass {
    */
   draw(renderstate) {
     const gl = this.__gl
+
+    gl.enable(gl.CULL_FACE)
+    gl.cullFace(gl.BACK)
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LESS)
+    gl.depthMask(true)
+
     this.glshader.bind(renderstate, 'DRAW_COLOR')
     this.glgeom.bind(renderstate)
 
@@ -170,6 +186,13 @@ class MyCustomRenderPass extends GLPass {
    */
   drawHighlightedGeoms(renderstate) {
     const gl = this.__gl
+
+    gl.enable(gl.CULL_FACE)
+    gl.cullFace(gl.BACK)
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LESS)
+    gl.depthMask(true)
+
     this.glshader.bind(renderstate, 'DRAW_HIGHLIGHT')
     this.glgeom.bind(renderstate)
 
@@ -192,6 +215,13 @@ class MyCustomRenderPass extends GLPass {
    */
   drawGeomData(renderstate) {
     const gl = this.__gl
+
+    gl.enable(gl.CULL_FACE)
+    gl.cullFace(gl.BACK)
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LESS)
+    gl.depthMask(true)
+
     this.glshader.bind(renderstate, 'DRAW_GEOMDATA')
     this.glgeom.bind(renderstate)
 

@@ -170,7 +170,6 @@ void main(void) {
    * The bind method.
    * @param {object} renderstate - The object tracking the current state of the renderer
    * @param {string} key - The key value.
-   * @return {any} - The return value.
    */
   bind(renderstate, key) {
     super.bind(renderstate, key)
@@ -184,22 +183,6 @@ void main(void) {
     if (exposure) {
       gl.uniform1f(exposure.location, renderstate.exposure)
     }
-    return true
-  }
-
-  static getParamDeclarations() {
-    return [
-      {
-        name: 'BaseColor',
-        defaultValue: new Color(1.0, 1.0, 0.5),
-      },
-      { name: 'Opacity', defaultValue: 1.0, range: [0, 1] },
-      {
-        name: 'EmissiveStrength',
-        defaultValue: 0.0,
-        range: [0, 1],
-      },
-    ]
   }
 }
 
